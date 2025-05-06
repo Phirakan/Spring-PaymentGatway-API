@@ -85,8 +85,7 @@ public class PaymentController {
 
         Payment payment = moneyspaceService.checkPaymentStatus(transactionId);
         try {
-
-
+            
             status currentStatus = statusRepository.findById(payment.getStatus()).orElse(null);
             String statusName = currentStatus != null ? currentStatus.getStatusname() : "UNKNOWN";
 
@@ -95,7 +94,7 @@ public class PaymentController {
             response.put("amount", payment.getAmount());
             response.put("description", payment.getMessage() != null ? payment.getMessage() : "ชำระค่าสินค้า");
             response.put("status", statusName);
-            response.put("qrCodeUrl", payment.getQrlink());
+//            response.put("qrCodeUrl", payment.getQrlink());
             response.put("qrlink", payment.getQrlink());
 
             return ResponseEntity.ok(response);
@@ -118,28 +117,6 @@ public class PaymentController {
         return ResponseEntity.ok(payment);
     }
 
-
-    @GetMapping("/check-status-direct/{transactionId}")
-    public ResponseEntity<Map<String, Object>> checkStatusDirect(@PathVariable String transactionId) {
-        try {
-            // HTTP response has body content: [{"Amount ":"1.00","Transaction ID ":"MQR0605254082169","Description ":" ","Status Payment ":"Pay Success"}]
-            Payment payment = moneyspaceService.checkPaymentStatus(transactionId);
-
-            status currentStatus = statusRepository.findById(payment.getStatus()).orElse(null);
-            String statusName = currentStatus != null ? currentStatus.getStatusname() : "UNKNOWN";
-
-            return ResponseEntity.ok(Map.of(
-                    "transactionId", payment.getTransactionid(),
-                    "amount", payment.getAmount(),
-                    "status", statusName,
-                    "qrlink", payment.getQrlink(),
-                    "paymentUpdated", true
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleMoneyspaceWebhook(@RequestBody Map<String, Object> payload) {
