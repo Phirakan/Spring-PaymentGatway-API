@@ -56,30 +56,6 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/create-installment")
-    public ResponseEntity<Payment> createInstallmentPayment(@RequestBody InstallmentPaymentRequest request) throws Exception {
-        Payment payment = moneyspaceService.createInstallmentTransaction(
-                request.getFirstname(),
-                request.getLastname(),
-                request.getEmail(),
-                request.getPhone(),
-                request.getAmount(),
-                request.getDescription(),
-                request.getAddress(),
-                request.getMessage(),
-                request.getFeeType(),
-                request.getOrderId(),
-                request.getPaymentType(),
-                request.getAgreement(),
-                request.getBankType(),
-                request.getStartTerm(),
-                request.getEndTerm()
-        );
-
-        return ResponseEntity.ok(payment);
-    }
-
-
     @GetMapping("/status/{transactionId}")
     public ResponseEntity<Map<String, Object>> checkPaymentStatus(@PathVariable String transactionId) throws Exception {
 
@@ -112,66 +88,29 @@ public class PaymentController {
     }
 
     @PostMapping("/cancel/{transactionId}")
-    public ResponseEntity<Payment> cancelPayment(@PathVariable String transactionId) throws Exception {
-        Payment payment = moneyspaceService.cancelPayment(transactionId);
-        return ResponseEntity.ok(payment);
-    }
-
-
-    @PostMapping("/webhook")
-    public ResponseEntity<String> handleMoneyspaceWebhook(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> cancelPayment(@PathVariable String transactionId) throws Exception {
         try {
 
-            System.out.println("ได้รับ Webhook จาก MoneySpace: " + payload);
+            Payment payment = moneyspaceService.cancelPayment(transactionId);
 
-            String transactionId = (String) payload.get("transactionId");
-            if (transactionId == null) {
-                System.err.println("ไม่พบ Transaction ID ใน webhook payload");
-                return ResponseEntity.badRequest().body("Missing Transaction ID");
-            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("transactionId", transactionId);
+            response.put("message", "รหัสธุรกรรมที่ " + transactionId + " ได้ถูกยกเลิกแล้ว");
+            response.put("status", "CANCELLED");
+            response.put("timestamp", Timestamp.from(Instant.now()).toString());
+           //response.put("payment", payment);
 
-            String paymentStatus = (String) payload.get("status");
-            if (paymentStatus == null) {
-                System.err.println("ไม่พบสถานะการชำระเงินใน webhook payload");
-                return ResponseEntity.badRequest().body("Missing Payment Status");
-            }
-
-            Payment payment = paymentRepository.findByTransactionid(transactionId)
-                    .orElse(null);
-
-            if (payment == null) {
-                System.err.println("ไม่พบรายการชำระเงินสำหรับ Transaction ID: " + transactionId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Payment not found");
-            }
-
-            String statusName = mapStatusNameFromResponse(paymentStatus);
-
-            status newStatus = statusRepository.findByStatusname(statusName)
-                    .orElseGet(() -> {
-                        status s = new status();
-                        s.setStatusname(statusName);
-                        s.setCreateat(Timestamp.from(Instant.now()));
-                        s.setUpdateat(Timestamp.from(Instant.now()));
-                        return statusRepository.save(s);
-                    });
-
-            payment.setStatus(newStatus.getStatusid());
-            payment.setUpdateat(Timestamp.from(Instant.now()));
-
-            paymentRepository.save(payment);
-
-            System.out.println("อัพเดตสถานะการชำระเงินสำเร็จ: " + statusName);
-
-            return ResponseEntity.ok("Webhook processed successfully");
-
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("เกิดข้อผิดพลาดในการประมวลผล webhook: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error processing webhook: " + e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("transactionId", transactionId);
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("message", "ไม่สามารถยกเลิกรหัสธุรกรรมที่ " + transactionId + " ได้");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-
     private String mapStatusNameFromResponse(String responseStatus) {
         if (responseStatus == null) {
             return "PENDING";
