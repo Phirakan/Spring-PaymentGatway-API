@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ชำระเงินด้วย QR Code</title>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .qr-container {
+            margin: 30px auto;
+            max-width: 300px;
+        }
+        img {
+            max-width: 100%;
+        }
+        .payment-details {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+<h1>ชำระเงินด้วย QR Code</h1>
+<div class="payment-status">
+    <p>สถานะ: <span id="paymentStatus" class="pending">กำลังรอการชำระเงิน</span></p>
+</div>
+
+<style>
+    .pending { color: orange; }
+    .success { color: green; }
+    .failed { color: red; }
+</style>
+<div class="payment-details">
+    <p>รายการสั่งซื้อ: <span id="orderDesc">-</span></p>
+    <p>จำนวนเงิน: <span id="amount">-</span> บาท</p>
+</div>
+
+<div class="qr-container">
+    <img id="qrCodeImage" src="" alt="QR Code สำหรับชำระเงิน">
+</div>
+
+<p>กรุณาสแกน QR Code ด้วยแอปพลิเคชันธนาคารของท่านเพื่อชำระเงิน</p>
+
+<script>
+    // รับค่า transaction ID จาก URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const transactionId = urlParams.get('transactionId');
+
+    // ร้องขอข้อมูลการชำระเงินจาก API
+    if (transactionId) {
+        fetch(`/api/payment/status/${transactionId}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log("ข้อมูลที่ได้รับ:", data); // เพิ่ม log เพื่อตรวจสอบข้อมูล
+
+                // ปรับให้ตรงกับโครงสร้างข้อมูลจริง
+                document.getElementById('orderDesc').textContent = data.description || 'ไม่มีรายละเอียด';
+                document.getElementById('amount').textContent = data.amount || '';
+
+                // ใช้ฟิลด์ qrCodeUrl แทน qrlink (ตามข้อมูลที่ได้รับ)
+                if (data.qrCodeUrl) {
+                    document.getElementById('qrCodeImage').src = data.qrCodeUrl;
+                } else {
+                    // ลองใช้ฟิลด์อื่นๆ ถ้ามี
+                    document.getElementById('qrCodeImage').src = data.qrlink || data.qrCodeUrl || '';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching payment data:', error);
+                alert('ไม่สามารถโหลดข้อมูลการชำระเงินได้ โปรดลองอีกครั้ง');
+            });
+    } else {
+        alert('ไม่พบข้อมูลการชำระเงิน');
+    }
+
+   function checkPaymentStatus() {
+    fetch(`/api/payment/status/${transactionId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("ข้อมูลที่ได้รับ:", data);
+
+            // อัพเดทข้อมูล
+            document.getElementById('orderDesc').textContent = data.description || 'ไม่มีรายละเอียด';
+            document.getElementById('amount').textContent = data.amount || '';
+
+            // อัพเดทสถานะการชำระเงิน
+            const statusElement = document.getElementById('statusBadge');
+            let statusText = 'กำลังรอการชำระเงิน';
+            let statusClass = 'status-pending';
+
+            if (data.status === 'SUCCESS') {
+                statusText = 'การชำระเงินสำเร็จ';
+                statusClass = 'status-success';
+            } else if (data.status === 'FAILED') {
+                statusText = 'การชำระเงินล้มเหลว';
+                statusClass = 'status-failed';
+            } else if (data.status === 'CANCELLED') {
+                statusText = 'การชำระเงินถูกยกเลิก';
+                statusClass = 'status-cancelled';
+            } else{
+                statusText = 'เกิดข้อผิดพลาดในการตรวจสอบสถานะ';
+                statusClass = 'status-error';
+            }
+
+            statusElement.textContent = statusText;
+            statusElement.className = 'status-badge ' + statusClass;
+        })
+        .catch(error => {
+            console.error('Error fetching payment data:', error);
+        });
+}
+
+// ตรวจสอบสถานะทุก 5 วินาที
+setInterval(checkPaymentStatus, 5000);
+</script>
+</body>
+</html>
