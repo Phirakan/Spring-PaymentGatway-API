@@ -113,7 +113,6 @@ public class MoneyspaceService {
             String statusPayment = response.getStatusPayment();
             System.out.println("สถานะจาก API: " + statusPayment);
 
-            // แปลงสถานะจาก MoneySpace
             String statusName;
             if (statusPayment.contains("Success") || statusPayment.equals("Pay Success")) {
                 statusName = "SUCCESS";
@@ -188,8 +187,6 @@ public class MoneyspaceService {
         if (responseStatus == null) {
             return "EMPTY RESPONESE";
         }
-
-        // แปลงเป็นตัวพิมพ์เล็ก
         String status = responseStatus.toLowerCase();
 
         if (status.contains("success") || status.contains("pay success")) {
