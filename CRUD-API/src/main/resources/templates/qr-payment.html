@@ -49,18 +49,15 @@
 <p>กรุณาสแกน QR Code ด้วยแอปพลิเคชันธนาคารของท่านเพื่อชำระเงิน</p>
 
 <script>
-    // รับค่า transaction ID จาก URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const transactionId = urlParams.get('transactionId');
 
-    // ร้องขอข้อมูลการชำระเงินจาก API
     if (transactionId) {
         fetch(`/api/payment/status/${transactionId}`)
             .then(response => response.json())
             .then(data => {
-                console.log("ข้อมูลที่ได้รับ:", data); // เพิ่ม log เพื่อตรวจสอบข้อมูล
+                console.log("ข้อมูลที่ได้รับ:", data);
 
-                // ปรับให้ตรงกับโครงสร้างข้อมูลจริง
                 document.getElementById('orderDesc').textContent = data.description || 'ไม่มีรายละเอียด';
                 document.getElementById('amount').textContent = data.amount || '';
 
@@ -84,13 +81,11 @@
     fetch(`/api/payment/status/${transactionId}`)
         .then(response => response.json())
         .then(data => {
-            console.log("ข้อมูลที่ได้รับ:", data);
 
-            // อัพเดทข้อมูล
+            console.log("ข้อมูลที่ได้รับ:", data);
             document.getElementById('orderDesc').textContent = data.description || 'ไม่มีรายละเอียด';
             document.getElementById('amount').textContent = data.amount || '';
 
-            // อัพเดทสถานะการชำระเงิน
             const statusElement = document.getElementById('statusBadge');
             let statusText = 'กำลังรอการชำระเงิน';
             let statusClass = 'status-pending';
@@ -117,7 +112,6 @@
         });
 }
 
-// ตรวจสอบสถานะทุก 5 วินาที
 setInterval(checkPaymentStatus, 5000);
 </script>
 </body>

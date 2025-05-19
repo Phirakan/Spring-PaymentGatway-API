@@ -10,6 +10,6 @@ public class PaymentViewController {
 
     @GetMapping("/qr")
     public String showQRPaymentPage() {
-        return "qr-payment"; // ชื่อของเทมเพลต HTML (จัดเก็บใน src/main/resources/templates/)
+        return "qr-payment";
     }
 }
